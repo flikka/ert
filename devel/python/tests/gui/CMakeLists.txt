@@ -10,3 +10,4 @@ addPythonTest(gui.mda_weights tests.gui.test_multiple_data_assimilation.MDAWeigh
 add_subdirectory(ertshell)
 add_subdirectory(ide)
 add_subdirectory(plottery)
+add_subdirectory(simulation)
