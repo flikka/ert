@@ -67,6 +67,10 @@ class SimulationsTracker(object):
         """ @rtype: list[SimulationStateStatus] """
         return list(self.custom_states)
 
+
+    def numFinishedSimulations(self):
+        return self.custom_states[4].count
+
     def __checkForUnusedEnums(self):
         for enum in JobStatusType.enums():
             used = False

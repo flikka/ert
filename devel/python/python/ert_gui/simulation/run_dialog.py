@@ -122,14 +122,22 @@ class RunDialog(QDialog):
 
         self.__update_timer.start()
 
-
     def checkIfRunFinished(self):
         if self._run_model.isFinished():
             self.hideKillAndShowDone()
 
-            if self._run_model.hasRunFailed():
+            finished_jobs = self.simulations_tracker.numFinishedSimulations()
+            total_jobs = self._run_model.getQueueSize()
+
+            min_realizations_configured = self._run_model.ert().analysisConfig().getMinRealisations()
+            min_realizations = min_realizations_configured if min_realizations_configured > 0 else total_jobs
+
+            if self._run_model.hasRunFailed() and finished_jobs < min_realizations:
                 error = self._run_model.getFailMessage()
-                QMessageBox.critical(self, "Simulations failed!", "The simulation failed with the following error:\n\n%s" % error)
+                QMessageBox.information(self, "Too many simulations failed",
+                                        "Only %i of the total %i simulations finished, %i is required.\n"
+                                        "Please see the following error below: \n\n%s" %
+                                        (finished_jobs, total_jobs, min_realizations, error))
                 self.reject()
 
 
