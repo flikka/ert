@@ -51,6 +51,8 @@ class JobQueue(BaseCClass):
     _free            = QueuePrototype("void job_queue_free( job_queue )")
     _set_max_running = QueuePrototype("void job_queue_set_max_running( job_queue , int)")
     _get_max_running = QueuePrototype("int  job_queue_get_max_running( job_queue )")
+    _set_max_job_duration = QueuePrototype("void job_queue_set_max_job_duration( job_queue , int)")
+    _get_max_job_duration = QueuePrototype("int  job_queue_get_max_job_duration( job_queue )")
     _set_driver      = QueuePrototype("void job_queue_set_driver( job_queue , void* )")
     _add_job         = QueuePrototype("int  job_queue_add_job( job_queue , char* , void* , void* , void* , void* , int , char* , char* , int , char**)")
     _kill_job        = QueuePrototype("bool job_queue_kill_job( job_queue , int )")
@@ -209,6 +211,12 @@ class JobQueue(BaseCClass):
 
     def set_max_running( self, max_running ):
         self.driver.set_max_running(max_running)
+
+    def get_max_job_duration(self):
+        return self.driver.get_max_job_duration()
+
+    def set_max_job_duration(self, max_duration):
+        self.driver.set_max_job_duration(max_duration)
 
     def killAllJobs(self):
         # The queue will not set the user_exit flag before the

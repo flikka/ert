@@ -10,8 +10,11 @@ class SimulationContext(object):
         self._ert = ert
         """ :type: ert.enkf.EnKFMain """
         self._size = size
+        max_runtime = ert.analysisConfig().get_max_runtime()
+        print("Max runtime is {}".format(max_runtime))
+        job_queue = ert.siteConfig().getJobQueue().set_max_job_duration(max_runtime)
 
-        self._queue_manager = JobQueueManager(ert.siteConfig().getJobQueue())
+        self._queue_manager = JobQueueManager(job_queue)
         self._queue_manager.startQueue(size, verbose=verbose)
         self._run_args = {}
         """ :type: dict[int, RunArg] """
