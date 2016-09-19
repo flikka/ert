@@ -178,6 +178,7 @@ class BaseRunModel(object):
             done_count = 0
 
             for state in queue_status:
+		print(state)
                 if state in done_state:
                     done_count += queue_status[state]
 
