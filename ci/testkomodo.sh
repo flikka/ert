@@ -34,7 +34,19 @@ run_ert_with_opm() {
     popd || exit 1
 }
 
+run_ert_with_old_storage_data()
+{
+    pushd "${CI_TEST_ROOT}" || exit 1
 
+    cp -r "${CI_SOURCE_ROOT}/test-data/ert/block_storage/version-6/" ert_with_old_storage_data
+    pushd ert_with_old_storage_data || exit 1
+
+    ert test_run --disable-monitoring flow_storage.ert ||
+        (
+            cat logs/ert-log* || true
+        )
+    popd || exit 1
+}
 
 
 # Run everest egg test on the cluster
@@ -121,6 +133,9 @@ start_tests() {
       return $return_code_ert_scheduler_tests
     elif [ "$CI_SUBSYSTEM_TEST" == "opm-integration" ]; then
       run_ert_with_opm
+      return $?
+    elif [ "$CI_SUBSYSTEM_TEST" == "old-storage" ]; then
+      run_ert_with_old_storage_data
       return $?
     fi
 
