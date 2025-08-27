@@ -79,7 +79,6 @@ def _create_connection_info(
         "urls": [
             f"https://{host}:{sock.getsockname()[1]}"
             for host in (
-                sock.getsockname()[0],
                 socket.gethostname(),
                 socket.getfqdn(),
                 get_machine_name(),
