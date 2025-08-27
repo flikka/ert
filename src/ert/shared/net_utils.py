@@ -98,7 +98,9 @@ def _bind_socket(host: str, port: int) -> socket.socket:
     try:
         family = get_family(host=host)
         sock = socket.socket(family=family, type=socket.SOCK_STREAM)
-        sock.bind((host, port))
+        sock.bind(
+            ("", port)
+        )  # Bind to all interfaces, https://docs.python.org/3/library/socket.html
     except socket.gaierror as err_info:
         raise InvalidHostException(
             f"Trying to bind socket with what looks like "
