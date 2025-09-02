@@ -4,7 +4,9 @@ import argparse
 import signal
 import threading
 from functools import partial
+from pathlib import Path
 
+from ert.services import StorageService
 from everest.config import EverestConfig, ServerConfig
 from everest.detached import ExperimentState, everserver_status, server_is_running
 from everest.everest_storage import EverestStorage
@@ -69,7 +71,11 @@ def monitor_everest(options: argparse.Namespace) -> None:
     config: EverestConfig = options.config
     status_path = ServerConfig.get_everserver_status_path(config.output_dir)
     server_state = everserver_status(status_path)
-    server_context = ServerConfig.get_server_context(config.output_dir)
+
+    client = StorageService.session(
+        Path(ServerConfig.get_session_dir(config.output_dir))
+    )
+    server_context = ServerConfig.get_server_context_from_client(client)
     if server_is_running(*server_context):
         run_detached_monitor(server_context=server_context)
         server_state = everserver_status(status_path)
