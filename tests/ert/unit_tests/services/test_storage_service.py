@@ -2,13 +2,15 @@ import glob
 import json
 import os
 import socket
+import ssl
 from unittest.mock import patch
 
 import pytest
 
 from ert.services import StorageService
-from ert.services._storage_main import _create_connection_info
+from ert.services._storage_main import _create_connection_info, _generate_certificate
 from ert.shared import find_available_socket
+from everest.config import ServerConfig
 
 
 def test_create_connection_string():
@@ -130,3 +132,33 @@ def test_storage_logging(change_to_tmpdir):
             )
             == 1
         ), "Found duplicated log entries"
+
+
+@pytest.mark.integration_test
+def test_certificate_generation(change_to_tmpdir):
+    cert, key, pw = _generate_certificate(ServerConfig.get_certificate_dir("output"))
+
+    # check that files are written
+    assert os.path.exists(cert)
+    assert os.path.exists(key)
+
+    # check certificate is readable
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    ctx.load_cert_chain(cert, key, pw)  # raise on error
+
+
+@pytest.mark.integration_test
+@patch(
+    "ert.shared.get_machine_name",
+    return_value="A" * 67,
+)
+def test_certificate_generation_handles_long_machine_names(change_to_tmpdir):
+    cert, key, pw = _generate_certificate(ServerConfig.get_certificate_dir("output"))
+
+    # check that files are written
+    assert os.path.exists(cert)
+    assert os.path.exists(key)
+
+    # check certificate is readable
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    ctx.load_cert_chain(cert, key, pw)  # raise on error
