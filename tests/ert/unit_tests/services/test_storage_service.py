@@ -23,7 +23,9 @@ def test_create_connection_string():
     connection_string = json.loads(os.environ["ERT_STORAGE_CONNECTION_STRING"])
     assert "urls" in connection_string
     assert "authtoken" in connection_string
-    assert len(connection_string["urls"]) == 3
+    assert (
+        len(connection_string["urls"]) >= 2
+    )  # If we don't get a FQDN we may have 2, otherwise 3
 
     del os.environ["ERT_STORAGE_CONNECTION_STRING"]
 
@@ -162,3 +164,22 @@ def test_certificate_generation_handles_long_machine_names(change_to_tmpdir):
     # check certificate is readable
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     ctx.load_cert_chain(cert, key, pw)  # raise on error
+
+
+def test_that_server_hosts_exists_as_san_in_certificate(change_to_tmpdir):
+    auth_token = "very_secret_token"
+    sock = find_available_socket()
+
+    path_to_certificate = "path/to/cert"
+    cert_path, _, _ = _generate_certificate(path_to_certificate)
+
+    conn_info = _create_connection_info(sock, auth_token, cert_path)
+    # check certificate is readable
+    x509 = ssl._ssl._test_decode_cert(conn_info["cert"])  # type: ignore[attr-defined]
+    sans = [san[1] for san in x509["subjectAltName"]]
+
+    # extract hostname from the url strings "https://<hostname>:<port>/..."
+    hosts_from_urls = [u.split("https://")[1].split(":")[0] for u in conn_info["urls"]]
+
+    assert set(sans) == set(hosts_from_urls)
+    del os.environ["ERT_STORAGE_CONNECTION_STRING"]
