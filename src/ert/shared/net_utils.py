@@ -100,7 +100,7 @@ def _bind_socket(host: str, port: int) -> socket.socket:
         sock = socket.socket(family=family, type=socket.SOCK_STREAM)
         sock.bind(
             ("", port)
-        )  # Bind to all interfaces, https://docs.python.org/3/library/socket.html
+        )  # Bind to all interfaces, https://docs.python.org/3/library/socket.html#socket-families
     except socket.gaierror as err_info:
         raise InvalidHostException(
             f"Trying to bind socket with what looks like "
