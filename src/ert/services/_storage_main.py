@@ -76,17 +76,16 @@ def parse_args() -> argparse.Namespace:
     return ap.parse_args()
 
 
+def _get_host_list() -> list[str]:
+    return list({socket.gethostname(), socket.getfqdn(), get_machine_name()})
+
+
 def _create_connection_info(
     sock: socket.socket, authtoken: str, cert: str | os.PathLike[str]
 ) -> dict[str, Any]:
     connection_info = {
         "urls": [
-            f"https://{host}:{sock.getsockname()[1]}"
-            for host in (
-                socket.gethostname(),
-                socket.getfqdn(),
-                get_machine_name(),
-            )
+            f"https://{host}:{sock.getsockname()[1]}" for host in _get_host_list()
         ],
         "authtoken": authtoken,
         "host": get_machine_name(),
@@ -126,8 +125,9 @@ def _generate_certificate(cert_folder: str) -> tuple[str, str, bytes]:
         ]
     )
     dns_name = get_machine_name()
-    hostname = dns_name.split(".")[0]
-
+    subject_alternative_names = (
+        _get_host_list()
+    )  # Important that this matches potential serer urls
     cert = (
         x509.CertificateBuilder()
         .subject_name(subject)
@@ -140,7 +140,7 @@ def _generate_certificate(cert_folder: str) -> tuple[str, str, bytes]:
         )  # 1 year
         .add_extension(
             x509.SubjectAlternativeName(
-                [x509.DNSName(f"{dns_name}"), x509.DNSName(f"{hostname}")]
+                [x509.DNSName(f"{san_name}") for san_name in subject_alternative_names]
             ),
             critical=False,
         )
