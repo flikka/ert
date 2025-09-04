@@ -127,7 +127,7 @@ def _generate_certificate(cert_folder: str) -> tuple[str, str, bytes]:
     dns_name = get_machine_name()
     subject_alternative_names = (
         _get_host_list()
-    )  # Important that this matches potential serer urls
+    )  # Important that this matches potential server url hosts
     cert = (
         x509.CertificateBuilder()
         .subject_name(subject)
