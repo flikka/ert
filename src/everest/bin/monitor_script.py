@@ -8,7 +8,7 @@ from pathlib import Path
 
 from ert.services import StorageService
 from everest.config import EverestConfig, ServerConfig
-from everest.detached import ExperimentState, everserver_status, server_is_running
+from everest.detached import ExperimentState, everserver_status
 from everest.everest_storage import EverestStorage
 
 from .utils import (
@@ -72,30 +72,32 @@ def monitor_everest(options: argparse.Namespace) -> None:
     status_path = ServerConfig.get_everserver_status_path(config.output_dir)
     server_state = everserver_status(status_path)
 
-    client = StorageService.session(
-        Path(ServerConfig.get_session_dir(config.output_dir))
-    )
-    server_context = ServerConfig.get_server_context_from_client(client)
-    if server_is_running(*server_context):
+    try:
+        client = StorageService.session(
+            Path(ServerConfig.get_session_dir(config.output_dir))
+        )
+        server_context = ServerConfig.get_server_context_from_client(client)
         run_detached_monitor(server_context=server_context)
         server_state = everserver_status(status_path)
         if server_state["status"] == ExperimentState.failed:
             raise SystemExit(server_state["message"])
         if server_state["message"] is not None:
             print(server_state["message"])
-    elif server_state["status"] == ExperimentState.never_run:
-        config_file = config.config_file
-        print(
-            "The optimization has not run yet.\n"
-            "To run the optimization use command:\n"
-            f"  `everest run {config_file}`"
-        )
-    else:
-        report_on_previous_run(
-            config_file=config.config_file,
-            everserver_status_path=status_path,
-            optimization_output_dir=config.optimization_output_dir,
-        )
+
+    except TimeoutError:
+        if server_state["status"] == ExperimentState.never_run:
+            config_file = config.config_file
+            print(
+                "The optimization has not run yet.\n"
+                "To run the optimization use command:\n"
+                f"  `everest run {config_file}`"
+            )
+        else:
+            report_on_previous_run(
+                config_file=config.config_file,
+                everserver_status_path=status_path,
+                optimization_output_dir=config.optimization_output_dir,
+            )
 
 
 if __name__ == "__main__":
