@@ -2,6 +2,7 @@ import contextlib
 import socket
 import threading
 
+import psutil
 import pytest
 
 from ert.shared import find_available_socket, get_machine_name
@@ -9,6 +10,27 @@ from ert.shared.net_utils import (
     NoPortsInRangeException,
     get_family,
 )
+
+
+def check_port_open(host: str, port: int) -> bool:
+    try:
+        # Create a socket object
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+        sock.connect((host, port))
+    except TimeoutError:
+        print(f"Port {port} is not open on {host} (connection timed out)")
+        return False
+    except ConnectionRefusedError:
+        print(f"Port {port} is not open on {host} (connection refused)")
+        return False
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False
+    finally:
+        sock.close()
+
+    return True
 
 
 def test_that_get_machine_name_is_predictive(mocker):
@@ -93,8 +115,29 @@ def test_that_find_available_socket_raises_on_invalid_ipv6_host():
 
 
 def test_that_find_available_socket_default_params_binds_all_interfaces():
+    # IPV4 only: Check that when listening on the bound socket,
+    # all relevant interfaces is listening
     sock = find_available_socket()
     assert sock.getsockname()[0] == "0.0.0.0"
+    sock.listen()
+
+    net_if_stats = psutil.net_if_stats()
+    previous_interface = ""
+    ipv4_interfaces = []
+    for interface, snicaddrs in psutil.net_if_addrs().items():
+        for snicaddr in snicaddrs:
+            if snicaddr.family == socket.AF_INET and (
+                snicaddr.address == "127.0.0.1" or snicaddr.broadcast
+            ):  # include loopback and broadcast addresses
+                if previous_interface != interface and net_if_stats[interface].isup:
+                    ipv4_interfaces.append(snicaddr.address)
+                previous_interface = interface
+
+    for ipv4_interface in ipv4_interfaces:
+        print(f"Checking interface {ipv4_interface}")
+        assert check_port_open(ipv4_interface, sock.getsockname()[1]), (
+            f"Port {sock.getsockname()[1]} not open on {ipv4_interface}"
+        )
 
 
 def test_get_family():
