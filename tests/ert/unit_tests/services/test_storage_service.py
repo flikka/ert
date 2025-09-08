@@ -170,6 +170,7 @@ def test_certificate_generation_handles_long_machine_names(change_to_tmpdir):
     ctx.load_cert_chain(cert, key, pw)  # raise on error
 
 
+@pytest.mark.integration_test
 def test_that_server_hosts_exists_as_san_in_certificate(change_to_tmpdir):
     auth_token = "very_secret_token"
     sock = find_available_socket()
