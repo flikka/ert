@@ -1,7 +1,7 @@
 # configuration for for `just`
 
 flikka-mac-slow-tests:
-    pytest tests/flikka
+    pytest -vvs tests/flikka --durations=0
 poly:
     ert gui test-data/ert/poly_example/poly.ert
 
