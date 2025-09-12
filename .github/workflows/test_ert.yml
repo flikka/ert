@@ -11,6 +11,18 @@ on:
         type: string
         default: '""'
 
+  workflow_dispatch:
+    inputs:
+      os:
+        type: string
+      python-version:
+        type: string
+      test-type:
+        type: string
+      select-string:
+        type: string
+        default: '""'
+
 env:
   ERT_SHOW_BACKTRACE: 1
   ERT_PYTEST_ARGS: '-m ${{ inputs.select-string }} --cov=ert --cov=everest --cov=_ert --cov-report=xml:cov_main.xml --junit-xml=junit.xml -o junit_family=legacy -v --durations=25 --benchmark-disable'
