@@ -15,12 +15,10 @@ from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapProp
 from ert.plugins.plugin_manager import ErtPluginManager
 from ert.run_models.run_model import ExperimentStatus
 from ert.services import StorageService
-from ert.services._base_service import BaseServiceExit
 from ert.trace import tracer
 from everest.config import ServerConfig
 from everest.detached import (
     ExperimentState,
-    everserver_status,
     update_everserver_status,
 )
 from everest.strings import (
@@ -197,11 +195,6 @@ def main() -> None:
                         update_everserver_status(
                             status_path, ExperimentState.failed, message=status.message
                         )
-        except BaseServiceExit:
-            # Server exit, happens on normal shutdown and keyboard interrupt
-            server_status = everserver_status(status_path)
-            if server_status["status"] == ExperimentState.running:
-                update_everserver_status(status_path, ExperimentState.stopped)
         except Exception as e:
             update_everserver_status(
                 status_path,

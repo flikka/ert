@@ -91,11 +91,14 @@ def everest_entry(args: list[str] | None = None) -> None:
         )
 
         if threading.current_thread() is threading.main_thread():
-            signal.signal(
+            print(
+                f"I am everest_script and will install signal handler, process_id {os.getpid()}"
+            )
+            old_signal = signal.signal(
                 signal.SIGINT,
                 partial(handle_keyboard_interrupt, options=options),
             )
-
+            print(f"Old signal handler (now in everest_script) was {old_signal}")
         asyncio.run(run_everest(options))
 
 

@@ -82,6 +82,7 @@ def stop_server(
     """
     Stop server if found and it is running.
     """
+    print("Stopping everest server programmatically...")
     for retry in range(retries):
         try:
             url, cert, auth = server_context
@@ -162,9 +163,11 @@ def wait_for_server_to_stop(
     Raise an exception when the timeout is reached.
     """
     if server_is_running(*server_context):
+        print("Waiting for everest server to stop...")
         sleep_time_increment = float(timeout) / (2**_HTTP_REQUEST_RETRY - 1)
         for retry_count in range(_HTTP_REQUEST_RETRY):
             sleep_time = sleep_time_increment * (2**retry_count)
+            print(f"I will now sleep for {sleep_time:.1f} seconds...")
             time.sleep(sleep_time)
             if not server_is_running(*server_context):
                 return

@@ -27,21 +27,26 @@ ConnInfo = Mapping[str, Any] | Exception | None
 SERVICE_CONF_PATHS: set[str] = set()
 
 
-class BaseServiceExit(OSError):
-    pass
-
-
 def cleanup_service_files(signum: int, frame: FrameType | None) -> None:
+    print(
+        f"cleanup_service_files called, signal received {signum}, i am process {os.getpid()}:"
+    )
+    # import traceback
+    # traceback.print_stack(frame)
     for file_path in SERVICE_CONF_PATHS:
         file = Path(file_path)
         if file.exists():
             file.unlink()
-    raise BaseServiceExit(f"Signal {signum} received.")
 
+    # Check if we have child processes:
+    import psutil
 
-if threading.current_thread() is threading.main_thread():
-    signal.signal(signal.SIGTERM, cleanup_service_files)
-    signal.signal(signal.SIGINT, cleanup_service_files)
+    parent = psutil.Process(os.getpid())
+    children = parent.children(recursive=True)
+    if children:
+        print("We have children, let them die!")
+    else:
+        print("We have no children!")
 
 
 def local_exec_args(script_args: str | list[str]) -> list[str]:
@@ -108,7 +113,15 @@ class _Proc(threading.Thread):
         env["ERT_COMM_FD"] = str(fd_write)
 
         SERVICE_CONF_PATHS.add(str(self._service_config_path))
-
+        if threading.current_thread() is threading.main_thread():
+            print(
+                f"Good day, I am _base_service and will install signal handler, process_id {os.getpid()}"
+            )
+            old_term = signal.signal(signal.SIGTERM, cleanup_service_files)
+            old_int = signal.signal(signal.SIGINT, cleanup_service_files)
+            print(
+                f"Old signal handlers (now in _baseservice) were: SIGTERM={old_term}, SIGINT={old_int}"
+            )
         # The process is waited for in _do_shutdown()
         self._childproc = Popen(
             self._exec_args,
@@ -179,10 +192,21 @@ class _Proc(threading.Thread):
         if self._childproc is None:
             return
         try:
+            print(f"I am shutting down (baseservice), I am myself pid {os.getpid()}")
+            print(
+                f"childprocess pid {self._childproc.pid} will be terminated now, stack:"
+            )
+            import traceback
+
+            traceback.print_stack()
+
             self._childproc.terminate()
+            print("This is me waiting for 10s for child process to terminate cleanly")
             self._childproc.wait(10)  # Give it 10s to shut down cleanly..
+            print("Done waiting for child process")
         except TimeoutExpired:
             try:
+                print("We will really kill it now!!!")
                 self._childproc.kill()  # ... then kick it harder...
                 self._childproc.wait(self._timeout)  # ... and wait again
             except TimeoutExpired:

@@ -34,6 +34,7 @@ from everest.detached import (
     server_is_running,
     start_monitor,
     stop_server,
+    update_everserver_status,
     wait_for_server_to_stop,
 )
 from everest.simulator import JOB_FAILURE, JOB_RUNNING, JOB_SUCCESS
@@ -102,7 +103,7 @@ def handle_keyboard_interrupt(signum: int, _: Any, options: argparse.Namespace) 
         )
         try:
             client = StorageService.session(
-                Path(ServerConfig.get_session_dir(options.config.output_dir))
+                Path(ServerConfig.get_session_dir(options.config.output_dir), timeout=1)
             )
             server_context = ServerConfig.get_server_context_from_conn_info(
                 client.conn_info
@@ -110,9 +111,22 @@ def handle_keyboard_interrupt(signum: int, _: Any, options: argparse.Namespace) 
             if server_is_running(*server_context):
                 stop_server(server_context)
                 wait_for_server_to_stop(server_context, timeout=10)
+                status_path = ServerConfig.get_everserver_status_path(
+                    options.config.output_dir
+                )
+                print(f"WE SHALL DIE!!! Updating server status at {status_path}")
+                server_status = everserver_status(status_path)
+                print(f"Status before death: {server_status['status']}")
+                if server_status["status"] == ExperimentState.running:
+                    update_everserver_status(status_path, ExperimentState.stopped)
+                    print(
+                        f"Status after death: {everserver_status(status_path)['status']}"
+                    )
 
         except TimeoutError:
             print("No running server found.")
+
+        print("Keyboard interrupt handled!!")
 
     else:
         print(f"KeyboardInterrupt (ID: {signum}) has been caught. Program will exit...")
